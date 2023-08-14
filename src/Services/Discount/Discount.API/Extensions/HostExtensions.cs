@@ -7,11 +7,11 @@ namespace Discount.API.Extensions;
 
 public static class HostExtensions
 {
-    public static IHost MigrateDatabase<TContext>(this IHost host, int? retry = 0)
+    public static IApplicationBuilder MigrateDatabase<TContext>(this IApplicationBuilder app, int? retry = 0)
     {
         int retryForAvailability = retry.Value;
 
-        using (var scope = host.Services.CreateScope())
+        using (var scope = app.ApplicationServices.CreateScope())
         {
             var services = scope.ServiceProvider;
             var configuration = services.GetRequiredService<IConfiguration>();
@@ -20,7 +20,7 @@ public static class HostExtensions
             try
             {
                 logger.LogInformation("Migrating postresql database.");
-                
+
                 using var connection = new NpgsqlConnection(configuration.GetValue<string>("DatabaseSettings:ConnectionString"));
                 connection.Open();
 
@@ -31,6 +31,8 @@ public static class HostExtensions
 
                 command.CommandText = "DROP TABLE IF EXISTS Coupon";
                 command.ExecuteNonQuery();
+
+                logger.LogInformation("33333333333333333333");
 
                 command.CommandText = @"CREATE TABLE Coupon(Id SERIAL PRIMARY KEY, 
                                                                     ProductName VARCHAR(24) NOT NULL,
@@ -55,11 +57,11 @@ public static class HostExtensions
                     {
                         retryForAvailability++;
                         Thread.Sleep(2000);
-                        MigrateDatabase<TContext>(host, retryForAvailability);
+                        MigrateDatabase<TContext>(app, retryForAvailability);
                     }
                 }
             }
 
-        return host;
+        return app;
     }
 }
